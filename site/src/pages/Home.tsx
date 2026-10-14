@@ -432,14 +432,15 @@ function Avatar({ name, size = 'md', active }: { name: string; size?: 'sm' | 'md
 
 /**
  * Google reviews as a card deck: one review at a time, its key phrase set
- * large with the full review beneath. Arrows and swipe/drag move through
- * the deck. Every review is laid out in the same grid cell, so
+ * large with the full review beneath. Arrows and sideways swipes move
+ * through the deck. Every review is laid out in the same grid cell, so
  * the card is always as tall as the longest review and nothing below jumps.
  */
 function Testimonials() {
   const [index, setIndex] = useState(0)
   const n = googleReviews.length
   const go = (d: number) => setIndex((i) => (i + d + n) % n)
+  const swipe = useRef<{ x: number; y: number } | null>(null)
 
   return (
     <section id="reviews" className="relative scroll-mt-24 overflow-hidden border-y-[1.5px] border-ink bg-teal-deep py-20 text-paper md:py-28">
@@ -476,15 +477,23 @@ function Testimonials() {
           <span aria-hidden className="absolute inset-0 translate-x-2 translate-y-2 -rotate-[0.7deg] rounded-[16px] border-[1.5px] border-ink bg-marigold" />
 
           <div className="relative overflow-hidden rounded-[16px] border-[1.5px] border-ink bg-card text-ink">
-            <m.div
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.18}
-              onDragEnd={(_, info) => {
-                if (info.offset.x < -60) go(1)
-                else if (info.offset.x > 60) go(-1)
+            {/* Swipe to change review. Vertical scrolling stays with the browser (touch-pan-y);
+                only a clearly sideways swipe changes the card, which never moves under the finger. */}
+            <div
+              onPointerDown={(e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return
+                swipe.current = { x: e.clientX, y: e.clientY }
               }}
-              className="grid cursor-grab touch-pan-y active:cursor-grabbing"
+              onPointerUp={(e) => {
+                const s = swipe.current
+                swipe.current = null
+                if (!s) return
+                const dx = e.clientX - s.x
+                const dy = e.clientY - s.y
+                if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1)
+              }}
+              onPointerCancel={() => (swipe.current = null)}
+              className="grid touch-pan-y select-none"
             >
               {googleReviews.map((r, i) => {
                 const active = i === index
@@ -517,7 +526,7 @@ function Testimonials() {
                   </m.figure>
                 )
               })}
-            </m.div>
+            </div>
             <div className="h-1 bg-ink/10">
               <m.div className="h-full origin-left bg-marigold" initial={false} animate={{ scaleX: (index + 1) / n }} transition={{ duration: 0.6, ease: easeOutExpo }} />
             </div>

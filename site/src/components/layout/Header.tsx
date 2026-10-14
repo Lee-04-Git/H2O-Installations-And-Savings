@@ -41,8 +41,15 @@ export function Header() {
         {/* Masthead */}
         <div className={clsx('border-b-[1.5px] transition-colors duration-300', mobileOpen ? 'border-transparent bg-transparent' : 'border-ink bg-paper')}>
           <div className="wrap flex h-[4.5rem] items-center justify-between gap-6">
-            <Link to="/" aria-label={`${business.fullName} — home`} className="relative z-10">
-              <Logo tone={mobileOpen ? 'light' : 'dark'} />
+            {/* Hidden while the mobile menu is open; the menu has its own Home link. */}
+            <Link
+              to="/"
+              aria-label={`${business.fullName} — home`}
+              aria-hidden={mobileOpen || undefined}
+              tabIndex={mobileOpen ? -1 : undefined}
+              className={clsx('relative z-10 transition-opacity duration-300', mobileOpen && 'pointer-events-none opacity-0')}
+            >
+              <Logo />
             </Link>
 
             <DesktopNav open={open} setOpen={setOpen} pathname={pathname} />

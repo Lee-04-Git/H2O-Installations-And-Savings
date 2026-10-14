@@ -34,7 +34,7 @@ After the domain is live, submit `https://<domain>/sitemap.xml` in Google Search
 | Design tokens (colour, type, radii, shadows) | `src/index.css` (`@theme`) |
 | Pages: Home, About, Services, Our Work, Contact, 404 | `src/pages/*` |
 | Header, mobile menu, footer, page curtain, floating WhatsApp button | `src/components/layout/*` |
-| Logo (compact on phones, full from 640px) | `src/components/ui/Logo.tsx`, `public/images/h2o-ripple-logo*.{webp,png}` |
+| Logo (same on all screen sizes; hidden while the mobile menu is open) | `src/components/ui/Logo.tsx`, `public/images/h2o-ripple-logo.{webp,png}` |
 | Favicons, web app manifest | `public/favicon*`, `public/apple-touch-icon.png`, `public/site.webmanifest` |
 | robots.txt / sitemap.xml (generated at build) | `vite.config.ts` |
 | Shared UI (buttons, reveals, polaroids, tip rail, CTA panel…) | `src/components/ui/*` |

@@ -89,20 +89,22 @@ function SwipeRail({ tips, header, highlight }: { tips: Tip[]; header: ReactNode
           </button>
         </div>
       </div>
-      <ul ref={rail} className="mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-5 pb-6 [scrollbar-width:thin]">
+      {/* Native swipe rail. Only the row animates in (once, as the section scrolls into view);
+          the tickets themselves stay put so nothing shifts under a swiping finger. */}
+      <m.ul
+        ref={rail}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8, ease: easeOutExpo }}
+        className="mt-6 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto overscroll-x-contain px-5 pb-6 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]"
+      >
         {tips.map((tip, i) => (
-          <m.li
-            key={tip.title}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.8, ease: easeOutExpo }}
-            className="h-[17rem] w-[85vw] max-w-[24rem] shrink-0 snap-start"
-          >
+          <li key={tip.title} className="h-[17rem] w-[85vw] max-w-[24rem] shrink-0 snap-start">
             <Ticket tip={tip} index={i} total={tips.length} featured={i === highlight} />
-          </m.li>
+          </li>
         ))}
-      </ul>
+      </m.ul>
     </section>
   )
 }
