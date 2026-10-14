@@ -1,0 +1,13 @@
+{
+  "name": "H2O Installations And Savings Cape Town",
+  "short_name": "H2O Plumbing",
+  "description": "Plumbing repairs, blocked drains, geyser installations, water meters and water-saving solutions in Cape Town.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#F3F9FB",
+  "theme_color": "#05455E",
+  "icons": [
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
