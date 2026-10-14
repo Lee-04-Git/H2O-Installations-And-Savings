@@ -18,6 +18,7 @@ import { CtaPanel } from '../components/ui/CtaPanel'
 import { useMedia } from '../lib/useMedia'
 import { easeOutExpo, inView } from '../lib/motion'
 import { usePageMeta } from '../lib/usePageMeta'
+import { useEdgeSwipeGuard } from '../lib/useEdgeSwipeGuard'
 import { Kicker } from '../components/ui/Kicker'
 import { ScrollText } from '../components/ui/ScrollText'
 
@@ -432,15 +433,33 @@ function Avatar({ name, size = 'md', active }: { name: string; size?: 'sm' | 'md
 
 /**
  * Google reviews as a card deck: one review at a time, its key phrase set
- * large with the full review beneath. Arrows and sideways swipes move
- * through the deck. Every review is laid out in the same grid cell, so
- * the card is always as tall as the longest review and nothing below jumps.
+ * large with the full review beneath. A native snap scroller, so touch drags
+ * the reviews directly; arrows scroll it too. Slides stretch to the tallest
+ * review, so the card height never changes and nothing below jumps.
  */
 function Testimonials() {
   const [index, setIndex] = useState(0)
   const n = googleReviews.length
-  const go = (d: number) => setIndex((i) => (i + d + n) % n)
-  const swipe = useRef<{ x: number; y: number } | null>(null)
+  const track = useRef<HTMLDivElement>(null)
+  const frame = useRef(0)
+  useEdgeSwipeGuard(track)
+
+  // The reviews are a native horizontal scroller: touch drags them directly (with momentum)
+  // and they snap one at a time. Arrows scroll the same track; the counter follows the scroll.
+  const go = (d: number) => {
+    const el = track.current
+    if (!el) return
+    const next = (index + d + n) % n
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ left: next * el.clientWidth, behavior: reduce ? 'auto' : 'smooth' })
+  }
+  const onScroll = () => {
+    cancelAnimationFrame(frame.current)
+    frame.current = requestAnimationFrame(() => {
+      const el = track.current
+      if (el) setIndex(Math.min(n - 1, Math.max(0, Math.round(el.scrollLeft / el.clientWidth))))
+    })
+  }
 
   return (
     <section id="reviews" className="relative scroll-mt-24 overflow-hidden border-y-[1.5px] border-ink bg-teal-deep py-20 text-paper md:py-28">
@@ -463,6 +482,7 @@ function Testimonials() {
                 type="button"
                 onClick={() => go(d)}
                 aria-label={label}
+                aria-controls="review-track"
                 className="grid size-12 place-items-center rounded-md border-[1.5px] border-paper/60 text-paper shadow-[3px_3px_0_rgb(243_249_251/0.2)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-ink hover:bg-marigold hover:text-ink active:translate-y-0.5"
               >
                 <Icon className="size-5" aria-hidden />
@@ -477,62 +497,48 @@ function Testimonials() {
           <span aria-hidden className="absolute inset-0 translate-x-2 translate-y-2 -rotate-[0.7deg] rounded-[16px] border-[1.5px] border-ink bg-marigold" />
 
           <div className="relative overflow-hidden rounded-[16px] border-[1.5px] border-ink bg-card text-ink">
-            {/* Swipe to change review. Vertical scrolling stays with the browser (touch-pan-y);
-                only a clearly sideways swipe changes the card, which never moves under the finger. */}
             <div
-              onPointerDown={(e) => {
-                if (e.pointerType === 'mouse' && e.button !== 0) return
-                swipe.current = { x: e.clientX, y: e.clientY }
-              }}
-              onPointerUp={(e) => {
-                const s = swipe.current
-                swipe.current = null
-                if (!s) return
-                const dx = e.clientX - s.x
-                const dy = e.clientY - s.y
-                if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1)
-              }}
-              onPointerCancel={() => (swipe.current = null)}
-              className="grid touch-pan-y select-none"
+              id="review-track"
+              ref={track}
+              onScroll={onScroll}
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="Google reviews"
+              tabIndex={0}
+              className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-none [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-teal [&::-webkit-scrollbar]:hidden"
             >
-              {googleReviews.map((r, i) => {
-                const active = i === index
-                return (
-                  <m.figure
-                    key={r.name}
-                    aria-hidden={!active}
-                    inert={!active}
-                    initial={false}
-                    animate={active ? { opacity: 1, x: 0 } : { opacity: 0, x: i < index ? -48 : 48 }}
-                    transition={{ duration: active ? 0.55 : 0.25, ease: easeOutExpo, delay: active ? 0.12 : 0 }}
-                    className={clsx('[grid-area:1/1] grid gap-6 p-7 select-none md:grid-cols-[9rem_1fr] md:gap-10 md:p-12', !active && 'pointer-events-none')}
-                  >
-                    <span aria-hidden className="poster block text-[7rem] leading-[0.75] text-marigold md:text-[11rem]">
-                      “
-                    </span>
-                    <div className="flex flex-col">
-                      <blockquote>
-                        <p className="serif text-[clamp(1.6rem,3vw,2.6rem)] leading-[1.15] font-medium tracking-[-0.01em]">{r.highlight}</p>
-                        <p className="serif mt-6 max-w-3xl text-[1.08rem] leading-relaxed text-ink-soft">{r.quote}</p>
-                      </blockquote>
-                      <figcaption className="mt-8 flex items-center gap-4 border-t-[1.5px] border-dashed border-ink/30 pt-6">
-                        <Avatar name={r.name} />
-                        <span>
-                          <span className="block text-[1.1rem] leading-tight font-semibold">{r.name}</span>
-                          <span className="kicker text-ink-soft">Google review</span>
-                        </span>
-                      </figcaption>
-                    </div>
-                  </m.figure>
-                )
-              })}
+              {googleReviews.map((r, i) => (
+                <figure
+                  key={r.name}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`Review ${i + 1} of ${n}`}
+                  className="grid w-full shrink-0 snap-center snap-always gap-6 p-7 md:grid-cols-[9rem_1fr] md:gap-10 md:p-12"
+                >
+                  <span aria-hidden className="poster block text-[7rem] leading-[0.75] text-marigold md:text-[11rem]">
+                    “
+                  </span>
+                  <div className="flex flex-col">
+                    <blockquote>
+                      <p className="serif text-[clamp(1.6rem,3vw,2.6rem)] leading-[1.15] font-medium tracking-[-0.01em]">{r.highlight}</p>
+                      <p className="serif mt-6 max-w-3xl text-[1.08rem] leading-relaxed text-ink-soft">{r.quote}</p>
+                    </blockquote>
+                    <figcaption className="mt-auto flex items-center gap-4 border-t-[1.5px] border-dashed border-ink/30 pt-6">
+                      <Avatar name={r.name} />
+                      <span>
+                        <span className="block text-[1.1rem] leading-tight font-semibold">{r.name}</span>
+                        <span className="kicker text-ink-soft">Google review</span>
+                      </span>
+                    </figcaption>
+                  </div>
+                </figure>
+              ))}
             </div>
             <div className="h-1 bg-ink/10">
               <m.div className="h-full origin-left bg-marigold" initial={false} animate={{ scaleX: (index + 1) / n }} transition={{ duration: 0.6, ease: easeOutExpo }} />
             </div>
           </div>
         </Reveal>
-
       </div>
     </section>
   )

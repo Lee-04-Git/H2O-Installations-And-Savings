@@ -5,6 +5,7 @@ import type { Tip } from '../../data/site'
 import { useMedia } from '../../lib/useMedia'
 import { Ticket } from './Ticket'
 import { easeOutExpo } from '../../lib/motion'
+import { useEdgeSwipeGuard } from '../../lib/useEdgeSwipeGuard'
 
 /**
  * Water-saving tips as a rail of tickets. On desktop, vertical scroll
@@ -73,6 +74,7 @@ function PinnedRail({ tips, header, highlight }: { tips: Tip[]; header: ReactNod
 
 function SwipeRail({ tips, header, highlight }: { tips: Tip[]; header: ReactNode; highlight: number }) {
   const rail = useRef<HTMLUListElement>(null)
+  useEdgeSwipeGuard(rail)
 
   const nudge = (dir: 1 | -1) => rail.current?.scrollBy({ left: dir * (rail.current.clientWidth * 0.8), behavior: 'smooth' })
 
@@ -97,7 +99,7 @@ function SwipeRail({ tips, header, highlight }: { tips: Tip[]; header: ReactNode
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.8, ease: easeOutExpo }}
-        className="mt-6 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto overscroll-x-contain px-5 pb-6 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]"
+        className="mt-6 flex snap-x snap-mandatory scroll-px-5 gap-4 overflow-x-auto overscroll-x-none px-5 pb-6 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]"
       >
         {tips.map((tip, i) => (
           <li key={tip.title} className="h-[17rem] w-[85vw] max-w-[24rem] shrink-0 snap-start">
